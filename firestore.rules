@@ -1,0 +1,233 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidStringList(listVal, maxLen) {
+      return listVal is list &&
+             listVal.size() <= maxLen &&
+             (listVal.size() == 0 || listVal[0] is string);
+    }
+
+    function isValidUserWorkspace(data, userId) {
+      return data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+             data.trainingLocked is bool &&
+             data.trainingDays is int && data.trainingDays >= 1 && data.trainingDays <= 365 &&
+             data.trainingUnlockAtMillis is int && data.trainingUnlockAtMillis >= 0 &&
+             data.trainingStatus in ['idle', 'training', 'locked', 'completed'] &&
+             (!('chromeVaultToken' in data) || (data.chromeVaultToken is string && data.chromeVaultToken.size() <= 128)) &&
+             (!('pinnedContextAnchor' in data) || (data.pinnedContextAnchor is string && data.pinnedContextAnchor.size() <= 4000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidConversation(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.contextSummary is string && data.contextSummary.size() <= 8000 &&
+             data.messageCount is int && data.messageCount >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidChatMessage(data, userId) {
+      return data.userId == userId &&
+             data.role in ['user', 'model', 'system'] &&
+             data.content is string && data.content.size() <= 60000 &&
+             (!('codeBlock' in data) || (data.codeBlock is string && data.codeBlock.size() <= 60000)) &&
+             (!('codeLanguage' in data) || (data.codeLanguage is string && data.codeLanguage.size() <= 40)) &&
+             data.deepSearchUsed is bool &&
+             data.boosthisVerified is bool &&
+             (!('emotionTag' in data) || (data.emotionTag is string && data.emotionTag.size() <= 40)) &&
+             (!('sources' in data) || isValidStringList(data.sources, 20)) &&
+             (!('attachmentNames' in data) || isValidStringList(data.attachmentNames, 20)) &&
+             (!('hungerTxtFilename' in data) || (data.hungerTxtFilename is string && data.hungerTxtFilename.size() <= 200)) &&
+             (!('hungerTxtContent' in data) || (data.hungerTxtContent is string && data.hungerTxtContent.size() <= 40000)) &&
+             data.marketingPromptPending is bool &&
+             (!('marketingProjectContext' in data) || (data.marketingProjectContext is string && data.marketingProjectContext.size() <= 2000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidTrainingBook(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 100 &&
+             data.totalChunks is int && data.totalChunks >= 1 && data.totalChunks <= 5000 &&
+             data.processedChunks is int && data.processedChunks >= 0 && data.processedChunks <= data.totalChunks &&
+             data.qaCount is int && data.qaCount >= 0 &&
+             data.trainingStatus in ['queued', 'reading', 'completed', 'failed'] &&
+             (!('summary' in data) || (data.summary is string && data.summary.size() <= 8000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidKnowledgeEntry(data, userId) {
+      return data.userId == userId &&
+             data.bookId is string && data.bookId.size() >= 1 && data.bookId.size() <= 128 &&
+             data.bookTitle is string && data.bookTitle.size() >= 1 && data.bookTitle.size() <= 200 &&
+             data.question is string && data.question.size() >= 1 && data.question.size() <= 2000 &&
+             data.scenario is string && data.scenario.size() >= 1 && data.scenario.size() <= 4000 &&
+             data.expertAnswer is string && data.expertAnswer.size() >= 1 && data.expertAnswer.size() <= 12000 &&
+             (!('keywords' in data) || isValidStringList(data.keywords, 15)) &&
+             data.sourceType in ['book_training', 'hunger_web', 'context_anchor'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidHungerReport(data, userId) {
+      return data.userId == userId &&
+             data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 200 &&
+             data.filename is string && data.filename.size() >= 1 && data.filename.size() <= 200 &&
+             data.reportContent is string && data.reportContent.size() >= 1 && data.reportContent.size() <= 40000 &&
+             data.learnedIntoVault is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'trainingLocked', 'trainingDays', 'trainingUnlockAtMillis', 'trainingStatus', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'trainingLocked', 'trainingDays', 'trainingUnlockAtMillis', 'trainingStatus', 'chromeVaultToken', 'pinnedContextAnchor', 'createdAt', 'updatedAt']) &&
+                       isValidUserWorkspace(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserWorkspace(incoming(), userId) && (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'trainingLocked', 'trainingDays', 'trainingUnlockAtMillis', 'trainingStatus', 'chromeVaultToken', 'pinnedContextAnchor', 'updatedAt'])
+                       );
+
+      allow delete: if false;
+
+      match /conversations/{convId} {
+        allow get: if isOwner(userId) && isValidId(convId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(convId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'contextSummary', 'messageCount', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'contextSummary', 'messageCount', 'createdAt', 'updatedAt']) &&
+                         isValidConversation(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(convId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidConversation(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['title', 'contextSummary', 'messageCount', 'updatedAt'])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(convId);
+
+        match /messages/{msgId} {
+          allow get: if isOwner(userId) && isValidId(convId) && isValidId(msgId);
+          allow list: if isOwner(userId) && isValidId(convId);
+
+          allow create: if isOwner(userId) &&
+                           isValidId(convId) &&
+                           isValidId(msgId) &&
+                           exists(/databases/$(database)/documents/users/$(userId)/conversations/$(convId)) &&
+                           incoming().keys().hasAll(['userId', 'role', 'content', 'deepSearchUsed', 'boosthisVerified', 'marketingPromptPending', 'createdAt']) &&
+                           incoming().keys().hasOnly(['userId', 'role', 'content', 'codeBlock', 'codeLanguage', 'deepSearchUsed', 'boosthisVerified', 'emotionTag', 'sources', 'attachmentNames', 'hungerTxtFilename', 'hungerTxtContent', 'marketingPromptPending', 'marketingProjectContext', 'createdAt']) &&
+                           isValidChatMessage(incoming(), userId);
+
+          allow update: if isOwner(userId) &&
+                           isValidId(convId) &&
+                           isValidId(msgId) &&
+                           incoming().userId == existing().userId &&
+                           incoming().role == existing().role &&
+                           incoming().createdAt == existing().createdAt &&
+                           isValidChatMessage(incoming(), userId) && (
+                             incoming().diff(existing()).affectedKeys().hasOnly(['content', 'codeBlock', 'codeLanguage', 'marketingPromptPending', 'sources'])
+                           );
+
+          allow delete: if false;
+        }
+      }
+
+      match /training_books/{bookId} {
+        allow get: if isOwner(userId) && isValidId(bookId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(bookId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'mimeType', 'totalChunks', 'processedChunks', 'qaCount', 'trainingStatus', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'mimeType', 'totalChunks', 'processedChunks', 'qaCount', 'trainingStatus', 'summary', 'createdAt', 'updatedAt']) &&
+                         isValidTrainingBook(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(bookId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTrainingBook(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['processedChunks', 'qaCount', 'trainingStatus', 'summary', 'updatedAt'])
+                         );
+
+        allow delete: if false;
+      }
+
+      match /knowledge_vault/{entryId} {
+        allow get: if isOwner(userId) && isValidId(entryId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(entryId) &&
+                         incoming().keys().hasAll(['userId', 'bookId', 'bookTitle', 'question', 'scenario', 'expertAnswer', 'sourceType', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'bookId', 'bookTitle', 'question', 'scenario', 'expertAnswer', 'keywords', 'sourceType', 'createdAt']) &&
+                         isValidKnowledgeEntry(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      match /hunger_reports/{reportId} {
+        allow get: if isOwner(userId) && isValidId(reportId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(reportId) &&
+                         incoming().keys().hasAll(['userId', 'topic', 'filename', 'reportContent', 'learnedIntoVault', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'topic', 'filename', 'reportContent', 'learnedIntoVault', 'createdAt']) &&
+                         isValidHungerReport(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(reportId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidHungerReport(incoming(), userId) && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['learnedIntoVault'])
+                         );
+
+        allow delete: if false;
+      }
+    }
+  }
+}

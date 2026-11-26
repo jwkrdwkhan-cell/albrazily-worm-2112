@@ -1,0 +1,6 @@
+{
+  "name": "Nexus AI",
+  "description": "Integrated AI assistant and autonomous book training studio with deep web verification, live voice emotion coaching, code preview, and permanent cloud knowledge storage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

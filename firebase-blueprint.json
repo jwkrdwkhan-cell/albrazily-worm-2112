@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "UserWorkspace": {
+      "title": "UserWorkspace",
+      "description": "User workspace configuration, training lock schedule, Chrome vault link token, and global pinned memory anchor.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "displayName": { "type": "string", "description": "User display name." },
+        "email": { "type": "string", "description": "Optional user email." },
+        "trainingLocked": { "type": "boolean", "description": "Whether the training studio lock is active." },
+        "trainingDays": { "type": "integer", "description": "Configured number of training lock days." },
+        "trainingUnlockAtMillis": { "type": "integer", "description": "Epoch millis when the training lock completes." },
+        "trainingStatus": { "type": "string", "enum": ["idle", "training", "locked", "completed"], "description": "Current training studio status." },
+        "chromeVaultToken": { "type": "string", "description": "Sync token linking this workspace to Chrome web storage." },
+        "pinnedContextAnchor": { "type": "string", "description": "Persistent global core objective and context anchor." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": ["userId", "displayName", "trainingLocked", "trainingDays", "trainingUnlockAtMillis", "trainingStatus", "createdAt", "updatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A persistent AI chat session with rolling long-context memory anchor.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "title": { "type": "string", "description": "Conversation title." },
+        "contextSummary": { "type": "string", "description": "Rolling long-context summary to prevent distraction." },
+        "messageCount": { "type": "integer", "description": "Number of messages in conversation." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": ["userId", "title", "contextSummary", "messageCount", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "An individual message inside a conversation with optional code preview, verified sources, attachments, and Hunger reports.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "role": { "type": "string", "enum": ["user", "model", "system"], "description": "Sender role." },
+        "content": { "type": "string", "description": "Markdown or plain text message body." },
+        "codeBlock": { "type": "string", "description": "Optional verified code block for copy and live preview." },
+        "codeLanguage": { "type": "string", "description": "Language of the code block (e.g., html, kotlin)." },
+        "deepSearchUsed": { "type": "boolean", "description": "Whether deep web verification was used." },
+        "boosthisVerified": { "type": "boolean", "description": "Whether Boosthis line-by-line verification passed." },
+        "emotionTag": { "type": "string", "description": "Detected user emotion tag in live voice mode." },
+        "sources": { "type": "string", "description": "List of verified source URLs." },
+        "attachmentNames": { "type": "string", "description": "List of attached file or image names." },
+        "hungerTxtFilename": { "type": "string", "description": "Generated Hunger .txt filename." },
+        "hungerTxtContent": { "type": "string", "description": "Generated Hunger .txt report body." },
+        "marketingPromptPending": { "type": "boolean", "description": "Whether Yes/No marketing client search buttons are active." },
+        "marketingProjectContext": { "type": "string", "description": "Project idea context for marketing client search." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." }
+      },
+      "required": ["userId", "role", "content", "deepSearchUsed", "boosthisVerified", "marketingPromptPending", "createdAt"]
+    },
+    "TrainingBook": {
+      "title": "TrainingBook",
+      "description": "An uploaded book or document queued or processed by the autonomous Training Studio.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "title": { "type": "string", "description": "Book or file title." },
+        "mimeType": { "type": "string", "description": "MIME type of uploaded document." },
+        "totalChunks": { "type": "integer", "description": "Total reading chunks." },
+        "processedChunks": { "type": "integer", "description": "Completed chunks." },
+        "qaCount": { "type": "integer", "description": "Total Q&A scenarios extracted from this book." },
+        "trainingStatus": { "type": "string", "enum": ["queued", "reading", "completed", "failed"], "description": "Book training progress state." },
+        "summary": { "type": "string", "description": "Mastery summary of the book." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": ["userId", "title", "mimeType", "totalChunks", "processedChunks", "qaCount", "trainingStatus", "createdAt", "updatedAt"]
+    },
+    "KnowledgeEntry": {
+      "title": "KnowledgeEntry",
+      "description": "A permanent expert Q&A and scenario unit stored in the cloud Knowledge Vault.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "bookId": { "type": "string", "description": "Source book or topic ID." },
+        "bookTitle": { "type": "string", "description": "Source book or topic title." },
+        "question": { "type": "string", "description": "Expert question." },
+        "scenario": { "type": "string", "description": "Applied real-world scenario." },
+        "expertAnswer": { "type": "string", "description": "Deep expert answer derived from book context." },
+        "keywords": { "type": "string", "description": "Searchable keywords list." },
+        "sourceType": { "type": "string", "enum": ["book_training", "hunger_web", "context_anchor"], "description": "Origin of knowledge entry." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." }
+      },
+      "required": ["userId", "bookId", "bookTitle", "question", "scenario", "expertAnswer", "sourceType", "createdAt"]
+    },
+    "HungerReport": {
+      "title": "HungerReport",
+      "description": "Autonomous knowledge gap research report generated as a .txt file by The Hunger engine.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "topic": { "type": "string", "description": "Target weak or missing topic." },
+        "filename": { "type": "string", "description": "Generated .txt filename." },
+        "reportContent": { "type": "string", "description": "Full text content of the Hunger .txt file." },
+        "learnedIntoVault": { "type": "boolean", "description": "Whether findings were ingested into Knowledge Vault." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." }
+      },
+      "required": ["userId", "topic", "filename", "reportContent", "learnedIntoVault", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserWorkspace" },
+      "description": "Per-user workspace state, training lock settings, and global memory anchor."
+    },
+    "/users/{userId}/conversations/{convId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "User chat conversations with rolling long-context summaries."
+    },
+    "/users/{userId}/conversations/{convId}/messages/{msgId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages belonging to a user conversation."
+    },
+    "/users/{userId}/training_books/{bookId}": {
+      "schema": { "$ref": "#/entities/TrainingBook" },
+      "description": "Books and files uploaded for deep cover-to-cover training."
+    },
+    "/users/{userId}/knowledge_vault/{entryId}": {
+      "schema": { "$ref": "#/entities/KnowledgeEntry" },
+      "description": "Permanent Knowledge Vault of extracted Q&As, scenarios, and Hunger web knowledge."
+    },
+    "/users/{userId}/hunger_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/HungerReport" },
+      "description": "Permanent archive of generated Hunger .txt self-learning files."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Nexus AI</string>
+    <string name="welcome_headline">أنت الآن في أقوى نظام ذكاء اصطناعي دون رقابة</string>
+    <string name="welcome_subheadline">محرك فائق للبرمجة والتحقق السطري، البحث العميق، والتدريب الذاتي الدائم</string>
+    <string name="btn_training_studio">لوحة التدريب</string>
+    <string name="btn_chat_studio">محرك الذكاء</string>
+    <string name="btn_deep_search">بحث عميق</string>
+    <string name="btn_upload_images">رفع الصور</string>
+    <string name="btn_upload_files">رفع الملفات</string>
+    <string name="btn_live_camera">الكاميرا الحية</string>
+    <string name="btn_copy">نسخ</string>
+    <string name="btn_preview">معاينة</string>
+    <string name="btn_sign_in_google">Sign in with Google</string>
+    <string name="error_generic">حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.</string>
+</resources>
